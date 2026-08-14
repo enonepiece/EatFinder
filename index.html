@@ -9,9 +9,6 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/components.css">
-  
-  <!-- Environment Variables / API Key Config -->
-  <script src="env.js"></script>
 </head>
 <body>
 
@@ -42,12 +39,6 @@
       <button id="btnFavoritesToggle" class="btn-header-action" title="查看收藏的店家">
         <span>❤️ 收藏</span>
       </button>
-
-      <button id="btnSettings" class="btn-header-action" title="API 與搜尋設定">
-        <span>⚙️ 設定</span>
-      </button>
-
-      <span id="apiSourceBadge" class="badge-api-source api-osm">OpenStreetMap (免金鑰)</span>
     </div>
   </header>
 
@@ -145,33 +136,6 @@
       </div>
       <div class="modal-footer">
         <button id="btnSpinAgain" class="btn-header-action btn-primary">再抽一次 🔄</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 設定 Modal (Google Places API Key) -->
-  <div id="settingsModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="settingsModalTitle">⚙️ 資料來源與 API 設定</h3>
-        <button id="settingsModalClose" class="modal-close-btn" aria-label="關閉">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5;">
-          EatFinder 預設採用 <strong>OpenStreetMap (Overpass API)</strong>，完全免費且無需 API 金鑰。<br><br>
-          若您擁有 <strong>Google Cloud API Key</strong>（已啟用 Places API New），可填入下方以獲得更精準的官方星級評分、評論數與營業中資訊。
-        </p>
-        
-        <label for="googleApiKeyInput" style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem;">
-          Google Places API Key (可選)：
-        </label>
-        <input type="text" id="googleApiKeyInput" class="search-input" placeholder="AIzaSy..." style="padding-left: 0.9rem;">
-        <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.4rem;">
-          金鑰僅保存在您的本機瀏覽器 LocalStorage，不會上傳至任何伺服器。
-        </small>
-      </div>
-      <div class="modal-footer">
-        <button id="btnSaveSettings" class="btn-header-action btn-primary">儲存設定</button>
       </div>
     </div>
   </div>

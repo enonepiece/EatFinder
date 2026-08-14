@@ -25,11 +25,6 @@ export const UI = {
       randomModalClose: document.getElementById('randomModalClose'),
       randomPickResult: document.getElementById('randomPickResult'),
       btnSpinAgain: document.getElementById('btnSpinAgain'),
-      settingsModal: document.getElementById('settingsModal'),
-      settingsModalClose: document.getElementById('settingsModalClose'),
-      googleApiKeyInput: document.getElementById('googleApiKeyInput'),
-      btnSaveSettings: document.getElementById('btnSaveSettings'),
-      apiSourceBadge: document.getElementById('apiSourceBadge'),
       toastContainer: document.getElementById('toastContainer')
     };
   },

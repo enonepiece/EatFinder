@@ -49,20 +49,13 @@ class EatFinderApp {
       if (mapElem) {
         mapElem.innerHTML = `
           <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; color: #94a3b8; background: #0f172a;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🗺️🔑</div>
-            <h3 style="color: #f8fafc; margin-bottom: 0.5rem; font-size: 1.25rem;">尚未設定 Google Maps API Key</h3>
-            <p style="max-width: 420px; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
-              請開啟專案根目錄的 <code style="color: #f97316; background: rgba(249,115,22,0.15); padding: 2px 6px; border-radius: 4px;">env.js</code> 檔案，填入您的 Google Maps API Key；或點擊右上角「⚙️ 設定」貼上金鑰。
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🗺️☁️</div>
+            <h3 style="color: #f8fafc; margin-bottom: 0.5rem; font-size: 1.25rem;">未偵測到 Google Maps API Key</h3>
+            <p style="max-width: 420px; font-size: 0.9rem; line-height: 1.6; color: #94a3b8;">
+              請於 Cloudflare Pages 後台設定環境變數 <code style="color: #f97316; background: rgba(249,115,22,0.15); padding: 2px 6px; border-radius: 4px;">GOOGLE_MAPS_API_KEY</code>
             </p>
-            <button id="btnOpenKeyModal" style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; border: none; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer;">
-              立即輸入 API Key ⚙️
-            </button>
           </div>
         `;
-        document.getElementById('btnOpenKeyModal')?.addEventListener('click', () => {
-          UI.elements.googleApiKeyInput.value = Config.getGoogleApiKey();
-          UI.elements.settingsModal.classList.add('modal-open');
-        });
       }
     }
   }
@@ -123,33 +116,9 @@ class EatFinderApp {
       this.applyFilterAndRender();
     });
 
-    // 設定按鈕與 Google API Key Modal
-    elements.btnSettings?.addEventListener('click', () => {
-      elements.googleApiKeyInput.value = Config.getGoogleApiKey();
-      elements.settingsModal.classList.add('modal-open');
-    });
-    elements.settingsModalClose?.addEventListener('click', () => {
-      UI.closeModal(elements.settingsModal);
-    });
-    elements.btnSaveSettings?.addEventListener('click', async () => {
-      const key = elements.googleApiKeyInput.value.trim();
-      Config.setGoogleApiKey(key);
-      this.updateApiBadge();
-      UI.closeModal(elements.settingsModal);
-      UI.showToast(key ? 'Google Maps API Key 已儲存，正在載入 Google 地圖...' : '已清除 Google API Key', 'success');
-      
-      // 重新初始化地圖與抓取資料
-      await this.initGoogleMap();
-      if (this.mapReady) {
-        MapService.updateUserLocation(this.currentLat, this.currentLng, this.currentRadiusKm);
-      }
-      this.fetchPlaces();
-    });
-
     // 點擊 Modal 外層關閉
     window.addEventListener('click', (e) => {
       if (e.target === elements.randomModal) UI.closeModal(elements.randomModal);
-      if (e.target === elements.settingsModal) UI.closeModal(elements.settingsModal);
     });
   }
 
