@@ -90,7 +90,8 @@ export const OsmService = {
 
     for (const el of elements) {
       const tags = el.tags || {};
-      const name = tags.name || tags['name:zh'] || tags['name:zh-TW'] || tags['name:en'] || tags.brand;
+      // 優先選取繁體中文名稱
+      const name = tags['name:zh-TW'] || tags['name:zh-Hant'] || tags['name:zh'] || tags.name || tags['name:en'] || tags.brand;
       if (!name) continue; // 略過無名店家
 
       // 避免重複名稱且位置極度接近

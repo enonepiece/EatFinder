@@ -35,13 +35,28 @@ export const Config = {
       // 本機未啟動 functions 或一般 http server 時忽略
     }
 
-    // 2. 本機 window.ENV (來自 env.js)
-    if (typeof window !== 'undefined' && window.ENV && window.ENV.GOOGLE_MAPS_API_KEY) {
-      const key = window.ENV.GOOGLE_MAPS_API_KEY.trim();
-      if (key && key !== 'your_google_maps_api_key_here') {
-        this.resolvedKey = key;
-        console.log('📄 從本機 env.js 載入 API Key');
+    // 2. 本機 window.ENV (嘗試動態載入 env.js 或讀取已存在的 window.ENV)
+    if (typeof window !== 'undefined') {
+      if (window.ENV && window.ENV.GOOGLE_MAPS_API_KEY && window.ENV.GOOGLE_MAPS_API_KEY.trim() && window.ENV.GOOGLE_MAPS_API_KEY !== 'your_google_maps_api_key_here') {
+        this.resolvedKey = window.ENV.GOOGLE_MAPS_API_KEY.trim();
         return this.resolvedKey;
+      }
+      
+      // 若尚未載入 env.js，嘗試在本地環境動態載入 env.js
+      try {
+        await new Promise((resolve) => {
+          const s = document.createElement('script');
+          s.src = 'env.js';
+          s.onload = () => resolve();
+          s.onerror = () => resolve(); // 若不存在或線上環境則略過
+          document.head.appendChild(s);
+        });
+        if (window.ENV && window.ENV.GOOGLE_MAPS_API_KEY && window.ENV.GOOGLE_MAPS_API_KEY.trim() && window.ENV.GOOGLE_MAPS_API_KEY !== 'your_google_maps_api_key_here') {
+          this.resolvedKey = window.ENV.GOOGLE_MAPS_API_KEY.trim();
+          return this.resolvedKey;
+        }
+      } catch (err) {
+        // 忽略
       }
     }
 
@@ -49,7 +64,6 @@ export const Config = {
     const localKey = localStorage.getItem('eatfinder_google_api_key');
     if (localKey && localKey.trim()) {
       this.resolvedKey = localKey.trim();
-      console.log('💾 從 LocalStorage 載入 API Key');
       return this.resolvedKey;
     }
 
@@ -74,7 +88,7 @@ export const Config = {
   },
 
   /**
-   * 動態載入 Google Maps JavaScript API
+   * 動態載入 Google Maps JavaScript API (強制繁體中文與台灣地區)
    */
   async loadGoogleMapsSDK() {
     if (window.google && window.google.maps) {
@@ -95,7 +109,8 @@ export const Config = {
 
       const script = document.createElement('script');
       script.id = scriptId;
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&language=zh-TW&loading=async`;
+      // 強制使用繁體中文 (language=zh-TW) 與台灣地區 (region=TW)
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&language=zh-TW&region=TW`;
       script.async = true;
       script.defer = true;
 

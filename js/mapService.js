@@ -138,18 +138,23 @@ export const MapService = {
 
     const center = { lat: defaultLat, lng: defaultLng };
 
-    this.map = new google.maps.Map(container, {
+    const mapOptions = {
       center: center,
       zoom: 14,
       styles: DARK_MAP_STYLE,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
-      zoomControl: true,
-      zoomControlOptions: {
-        position: google.maps.ControlPosition.RIGHT_BOTTOM
-      }
-    });
+      zoomControl: true
+    };
+
+    if (window.google?.maps?.ControlPosition?.RIGHT_BOTTOM) {
+      mapOptions.zoomControlOptions = {
+        position: window.google.maps.ControlPosition.RIGHT_BOTTOM
+      };
+    }
+
+    this.map = new google.maps.Map(container, mapOptions);
 
     this.currentInfoWindow = new google.maps.InfoWindow();
 
@@ -173,6 +178,8 @@ export const MapService = {
 
     const center = { lat, lng };
 
+    const circleSymbol = window.google?.maps?.SymbolPath?.CIRCLE ?? 0;
+
     // 使用者位置 Marker
     if (this.userMarker) {
       this.userMarker.setPosition(center);
@@ -183,7 +190,7 @@ export const MapService = {
         title: '📍 您的目前位置',
         zIndex: 9999,
         icon: {
-          path: google.maps.SymbolPath.CIRCLE,
+          path: circleSymbol,
           scale: 8,
           fillColor: '#3b82f6',
           fillOpacity: 1,

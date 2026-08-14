@@ -51,6 +51,7 @@ export const GoogleService = {
     const requestBody = {
       includedTypes: includedTypes,
       maxResultCount: 20,
+      languageCode: 'zh-TW',
       locationRestriction: {
         circle: {
           center: {
@@ -67,6 +68,7 @@ export const GoogleService = {
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
+        'X-Goog-Language-Code': 'zh-TW',
         // 精簡 FieldMask 只抓必要欄位，降低成本與流量
         'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.currentOpeningHours,places.regularOpeningHours,places.googleMapsUri,places.websiteUri,places.nationalPhoneNumber,places.priceLevel,places.primaryType'
       },
