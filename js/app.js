@@ -1,11 +1,8 @@
-/**
- * app.js - 主應用程式控制模組
- */
-
 import { GeoService } from './geo.js';
 import { OsmService } from './osmService.js';
 import { GoogleService } from './googleService.js';
 import { MapService } from './mapService.js';
+import { Config } from './config.js';
 import { UI } from './ui.js';
 
 class EatFinderApp {
@@ -18,22 +15,56 @@ class EatFinderApp {
     this.favoritePlaces = new Map();
     this.isShowingFavoritesOnly = false;
     this.isLoading = false;
+    this.mapReady = false;
   }
 
   async init() {
     UI.init();
     this.loadFavorites();
+    this.bindEvents();
+
+    // 先解析 API Key (支援 Cloudflare 環境變數 / env.js / LocalStorage)
+    await Config.resolveApiKey();
     this.updateApiBadge();
 
-    // 初始化地圖，並註冊點選地圖重新自訂定位中心
-    MapService.init('map', this.currentLat, this.currentLng, (lat, lng) => {
-      this.setLocation(lat, lng, '自訂地圖中心位置');
-    });
-
-    this.bindEvents();
+    // 載入 Google Maps SDK 並初始化地圖
+    await this.initGoogleMap();
 
     // 啟動時自動嘗試 GPS 定位
     await this.handleLocateMe();
+  }
+
+  async initGoogleMap() {
+    try {
+      await Config.loadGoogleMapsSDK();
+      MapService.init('map', this.currentLat, this.currentLng, (lat, lng) => {
+        this.setLocation(lat, lng, '自訂地圖中心位置');
+      });
+      this.mapReady = true;
+      console.log('🗺️ Google Maps SDK 載入完成');
+    } catch (err) {
+      console.warn('Google Maps 載入失敗:', err);
+      this.mapReady = false;
+      const mapElem = document.getElementById('map');
+      if (mapElem) {
+        mapElem.innerHTML = `
+          <div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; color: #94a3b8; background: #0f172a;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🗺️🔑</div>
+            <h3 style="color: #f8fafc; margin-bottom: 0.5rem; font-size: 1.25rem;">尚未設定 Google Maps API Key</h3>
+            <p style="max-width: 420px; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+              請開啟專案根目錄的 <code style="color: #f97316; background: rgba(249,115,22,0.15); padding: 2px 6px; border-radius: 4px;">env.js</code> 檔案，填入您的 Google Maps API Key；或點擊右上角「⚙️ 設定」貼上金鑰。
+            </p>
+            <button id="btnOpenKeyModal" style="background: linear-gradient(135deg, #f97316, #ea580c); color: white; border: none; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer;">
+              立即輸入 API Key ⚙️
+            </button>
+          </div>
+        `;
+        document.getElementById('btnOpenKeyModal')?.addEventListener('click', () => {
+          UI.elements.googleApiKeyInput.value = Config.getGoogleApiKey();
+          UI.elements.settingsModal.classList.add('modal-open');
+        });
+      }
+    }
   }
 
   bindEvents() {
@@ -44,8 +75,10 @@ class EatFinderApp {
 
     // 搜尋半徑變更
     elements.searchRadiusSelect?.addEventListener('change', (e) => {
-      this.currentRadiusKm = parseFloat(e.target.value) || 10;
-      MapService.updateUserLocation(this.currentLat, this.currentLng, this.currentRadiusKm);
+      this.currentRadiusKm = parseFloat(e.target.value) || 5;
+      if (this.mapReady) {
+        MapService.updateUserLocation(this.currentLat, this.currentLng, this.currentRadiusKm);
+      }
       this.fetchPlaces();
     });
 
@@ -92,18 +125,24 @@ class EatFinderApp {
 
     // 設定按鈕與 Google API Key Modal
     elements.btnSettings?.addEventListener('click', () => {
-      elements.googleApiKeyInput.value = GoogleService.getApiKey();
+      elements.googleApiKeyInput.value = Config.getGoogleApiKey();
       elements.settingsModal.classList.add('modal-open');
     });
     elements.settingsModalClose?.addEventListener('click', () => {
       UI.closeModal(elements.settingsModal);
     });
-    elements.btnSaveSettings?.addEventListener('click', () => {
+    elements.btnSaveSettings?.addEventListener('click', async () => {
       const key = elements.googleApiKeyInput.value.trim();
-      GoogleService.setApiKey(key);
+      Config.setGoogleApiKey(key);
       this.updateApiBadge();
       UI.closeModal(elements.settingsModal);
-      UI.showToast(key ? 'Google Places API Key 已儲存，已切換至 Google Places 模式' : '已恢復免金鑰 OpenStreetMap 模式', 'success');
+      UI.showToast(key ? 'Google Maps API Key 已儲存，正在載入 Google 地圖...' : '已清除 Google API Key', 'success');
+      
+      // 重新初始化地圖與抓取資料
+      await this.initGoogleMap();
+      if (this.mapReady) {
+        MapService.updateUserLocation(this.currentLat, this.currentLng, this.currentRadiusKm);
+      }
       this.fetchPlaces();
     });
 
@@ -117,7 +156,7 @@ class EatFinderApp {
   updateApiBadge() {
     if (UI.elements.apiSourceBadge) {
       const hasGoogle = GoogleService.hasApiKey();
-      UI.elements.apiSourceBadge.textContent = hasGoogle ? 'Google Places API' : 'OpenStreetMap (免金鑰)';
+      UI.elements.apiSourceBadge.textContent = hasGoogle ? 'Google Maps & Places API' : '未設定 API Key';
       UI.elements.apiSourceBadge.className = `badge-api-source ${hasGoogle ? 'api-google' : 'api-osm'}`;
     }
   }
@@ -134,7 +173,7 @@ class EatFinderApp {
 
       const addr = await GeoService.reverseGeocode(pos.lat, pos.lng);
       this.setLocation(pos.lat, pos.lng, addr);
-      UI.showToast('📍 GPS 定位成功！開始搜尋 10 公里內餐飲店家', 'success');
+      UI.showToast('📍 GPS 定位成功！開始搜尋周遭店家', 'success');
     } catch (err) {
       console.warn('GPS 定位失敗，使用預設中心點:', err);
       UI.showToast(err.message || 'GPS 定位失敗，使用預設座標', 'error', 4500);
@@ -154,7 +193,9 @@ class EatFinderApp {
       UI.elements.currentLocationText.title = label || '';
     }
 
-    MapService.updateUserLocation(lat, lng, this.currentRadiusKm);
+    if (this.mapReady) {
+      MapService.updateUserLocation(lat, lng, this.currentRadiusKm);
+    }
     await this.fetchPlaces();
   }
 
@@ -255,15 +296,17 @@ class EatFinderApp {
     );
 
     // 渲染地圖 Markers
-    MapService.renderPlaces(this.filteredPlaces, (place) => {
-      // 點擊地圖 marker 時，將側邊欄該卡片捲動至可見區域
-      const card = document.querySelector(`.place-card[data-id="${place.id}"]`);
-      if (card) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        card.classList.add('highlight-selected');
-        setTimeout(() => card.classList.remove('highlight-selected'), 1500);
-      }
-    });
+    if (this.mapReady) {
+      MapService.renderPlaces(this.filteredPlaces, (place) => {
+        // 點擊地圖 marker 時，將側邊欄該卡片捲動至可見區域
+        const card = document.querySelector(`.place-card[data-id="${place.id}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          card.classList.add('highlight-selected');
+          setTimeout(() => card.classList.remove('highlight-selected'), 1500);
+        }
+      });
+    }
   }
 
   /**

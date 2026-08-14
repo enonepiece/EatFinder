@@ -3,32 +3,29 @@
  */
 
 import { GeoService } from './geo.js';
+import { Config } from './config.js';
 
 export const GoogleService = {
   cache: new Map(), // 5 分鐘記憶體快取，避免短時間內重複呼叫 API
 
   getApiKey() {
-    return localStorage.getItem('eatfinder_google_api_key') || '';
+    return Config.getGoogleApiKey();
   },
 
   setApiKey(key) {
-    if (key) {
-      localStorage.setItem('eatfinder_google_api_key', key.trim());
-    } else {
-      localStorage.removeItem('eatfinder_google_api_key');
-    }
+    Config.setGoogleApiKey(key);
     this.cache.clear(); // 切換 Key 時清空快取
   },
 
   hasApiKey() {
-    return Boolean(this.getApiKey());
+    return Config.hasGoogleApiKey();
   },
 
   /**
    * 使用 Google Places API (New) searchNearby 搜尋半徑內的餐廳
    */
   async fetchNearbyPlaces(lat, lng, radiusKm = 5, category = 'all') {
-    const apiKey = this.getApiKey();
+    const apiKey = await Config.resolveApiKey();
     if (!apiKey) {
       throw new Error('未設定 Google Places API Key');
     }
