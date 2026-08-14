@@ -227,19 +227,19 @@ export const UI = {
   /**
    * 呈現隨機挑選轉盤結果
    */
-  showRandomPick(place) {
+  showRandomPick(place, radiusKm = 3) {
     if (!this.elements.randomPickResult || !this.elements.randomModal) return;
 
     if (!place) {
       this.elements.randomPickResult.innerHTML = `
         <div class="random-empty">
-          <p>目前篩選範圍內沒有可推薦的營業中店家！</p>
+          <p>目前半徑 ${radiusKm} 公里內沒有可推薦的店家！請嘗試加大搜尋半徑。</p>
         </div>
       `;
     } else {
       this.elements.randomPickResult.innerHTML = `
         <div class="random-winner-card animate-pop">
-          <div class="winner-badge">🎉 命運決定就是這家！</div>
+          <div class="winner-badge">🎯 半徑 ${radiusKm} 公里 · 命運推薦！</div>
           <div class="winner-icon">${place.categoryIcon || '🍽️'}</div>
           <h2 class="winner-name">${this.escapeHtml(place.name)}</h2>
           <div class="winner-meta">
@@ -262,7 +262,7 @@ export const UI = {
           <div class="winner-actions">
             <a href="${place.googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="btn-winner-primary">
               <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-              <span>前往 Google Maps 查看</span>
+              <span>Google Maps 查看</span>
             </a>
             <a href="${place.directionsUrl}" target="_blank" rel="noopener noreferrer" class="btn-winner-secondary">
               立即導航

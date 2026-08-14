@@ -9,7 +9,7 @@ class EatFinderApp {
   constructor() {
     this.currentLat = 25.0330; // 預設台北 101 座標
     this.currentLng = 121.5654;
-    this.currentRadiusKm = 5; // 預設 5 公里
+    this.currentRadiusKm = 3; // 預設 3 公里
     this.allPlaces = [];
     this.filteredPlaces = [];
     this.favoritePlaces = new Map();
@@ -280,22 +280,29 @@ class EatFinderApp {
 
   /**
    * 隨機挑選「今天吃什麼？」
+   * 嚴格依據目前使用者設定的半徑範圍進行挑選
    */
   handleRandomPick() {
-    // 優先挑選營業中的店家
-    let candidatePlaces = this.filteredPlaces.filter(p => p.isOpen === true);
-    if (candidatePlaces.length === 0) {
-      candidatePlaces = this.filteredPlaces;
+    const currentRadius = this.currentRadiusKm;
+
+    // 1. 嚴格限縮在目前半徑範圍內
+    const inRadiusPlaces = this.filteredPlaces.filter(p => p.distanceKm <= (currentRadius + 0.05));
+
+    if (inRadiusPlaces.length === 0) {
+      UI.showRandomPick(null, currentRadius);
+      return;
     }
 
+    // 2. 優先挑選營業中的店家
+    let candidatePlaces = inRadiusPlaces.filter(p => p.isOpen === true);
     if (candidatePlaces.length === 0) {
-      UI.showRandomPick(null);
-      return;
+      // 若當前無營業中，則從當前半徑內所有店家抽選
+      candidatePlaces = inRadiusPlaces;
     }
 
     const randomIndex = Math.floor(Math.random() * candidatePlaces.length);
     const chosenPlace = candidatePlaces[randomIndex];
-    UI.showRandomPick(chosenPlace);
+    UI.showRandomPick(chosenPlace, currentRadius);
   }
 
   /**
