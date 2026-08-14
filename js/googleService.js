@@ -25,11 +25,6 @@ export const GoogleService = {
    * 使用 Google Places API (New) searchNearby 搜尋半徑內的餐廳
    */
   async fetchNearbyPlaces(lat, lng, radiusKm = 5, category = 'all') {
-    const apiKey = await Config.resolveApiKey();
-    if (!apiKey) {
-      throw new Error('未設定 Google Places API Key');
-    }
-
     // 快取機制 (座標精準到小數點後 2 位約 1km，半徑與類別相同時直接命中快取)
     const cacheKey = `${lat.toFixed(2)}_${lng.toFixed(2)}_${radiusKm}_${category}`;
     const cached = this.cache.get(cacheKey);
@@ -39,7 +34,6 @@ export const GoogleService = {
     }
 
     const radiusMeters = Math.min(radiusKm * 1000, 10000);
-    const url = 'https://places.googleapis.com/v1/places:searchNearby';
 
     let includedTypes = ['restaurant', 'cafe', 'fast_food_restaurant', 'bakery', 'meal_takeaway'];
     if (category === 'restaurant') includedTypes = ['restaurant'];
@@ -63,24 +57,48 @@ export const GoogleService = {
       }
     };
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': apiKey,
-        'X-Goog-Language-Code': 'zh-TW',
-        // 精簡 FieldMask 只抓必要欄位，降低成本與流量
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.currentOpeningHours,places.regularOpeningHours,places.googleMapsUri,places.websiteUri,places.nationalPhoneNumber,places.priceLevel,places.primaryType'
-      },
-      body: JSON.stringify(requestBody)
-    });
+    let data = null;
 
-    if (!response.ok) {
-      const errJson = await response.json().catch(() => ({}));
-      throw new Error(errJson?.error?.message || `Google Places API 錯誤 (${response.status})`);
+    // 1. 優先透過 Cloudflare Serverless Proxy (/api/places) 轉發，100% 避開瀏覽器 CORS
+    try {
+      const proxyRes = await fetch('/api/places', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+      if (proxyRes.ok) {
+        data = await proxyRes.json();
+      } else {
+        const errData = await proxyRes.json().catch(() => ({}));
+        throw new Error(errData?.error?.message || `Proxy 錯誤 (${proxyRes.status})`);
+      }
+    } catch (proxyErr) {
+      console.warn('Cloudflare Proxy 失敗，嘗試直連:', proxyErr);
+      const apiKey = await Config.resolveApiKey();
+      if (!apiKey) {
+        throw new Error(proxyErr.message || '未設定 Google Places API Key');
+      }
+
+      // 2. 本機直連 Fallback
+      const url = 'https://places.googleapis.com/v1/places:searchNearby';
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-Language-Code': 'zh-TW',
+          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.currentOpeningHours,places.regularOpeningHours,places.googleMapsUri,places.websiteUri,places.nationalPhoneNumber,places.priceLevel,places.primaryType'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson?.error?.message || `Google Places API 錯誤 (${response.status})`);
+      }
+      data = await response.json();
     }
 
-    const data = await response.json();
     const normalized = this.normalizePlaces(data.places || [], lat, lng);
 
     // 存入快取
