@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EatFinder | 10公里周遭營業中餐飲店家搜尋</title>
+  <meta name="description" content="自動抓取目前 GPS 位置，搜尋半徑 10 公里內營業中的餐廳、小吃、咖啡廳與美食店家，提供 Google Maps 導航連結與今日營業時間。">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+  <!-- 頂部導航欄 -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo">🍜</div>
+      <div class="brand-text">
+        <h1>EatFinder</h1>
+        <div class="tagline">周遭 10 公里營業中美食搜尋</div>
+      </div>
+    </div>
+
+    <!-- 頂部目前位置 & 操作 -->
+    <div class="header-actions">
+      <div class="location-pill" title="目前定位位置">
+        <span class="loc-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"/><circle cx="12" cy="10" r="3"/></svg>
+        </span>
+        <span class="loc-text" id="currentLocationText">正在獲取 GPS 定位...</span>
+      </div>
+
+      <button id="btnLocateMe" class="btn-header-action btn-primary" title="重新透過 GPS 偵測目前位置">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
+        <span>重新定位</span>
+      </button>
+
+      <button id="btnFavoritesToggle" class="btn-header-action" title="查看收藏的店家">
+        <span>❤️ 收藏</span>
+      </button>
+
+      <button id="btnSettings" class="btn-header-action" title="API 與搜尋設定">
+        <span>⚙️ 設定</span>
+      </button>
+
+      <span id="apiSourceBadge" class="badge-api-source api-osm">OpenStreetMap (免金鑰)</span>
+    </div>
+  </header>
+
+  <!-- 主應用區域：側邊欄清單 + 互動地圖 -->
+  <main class="app-container">
+
+    <!-- 側邊欄店家列表與篩選控制 -->
+    <aside class="sidebar">
+      
+      <!-- 篩選控制面板 -->
+      <section class="filter-panel" aria-label="搜尋與篩選">
+        <!-- 關鍵字輸入 -->
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="searchKeywords" class="search-input" placeholder="搜尋店名、地址、拉麵、火鍋、咖啡..." aria-label="搜尋關鍵字">
+        </div>
+
+        <!-- 篩選列 -->
+        <div class="filter-row">
+          <!-- 搜尋半徑 -->
+          <select id="searchRadius" class="custom-select" aria-label="搜尋半徑">
+            <option value="1">半徑 1 公里</option>
+            <option value="3">半徑 3 公里</option>
+            <option value="5">半徑 5 公里</option>
+            <option value="10" selected>半徑 10 公里 (預設)</option>
+          </select>
+
+          <!-- 類別過濾 -->
+          <select id="categoryFilter" class="custom-select" aria-label="美食類別">
+            <option value="all">🍽️ 所有餐飲</option>
+            <option value="restaurant">🍜 餐廳美食</option>
+            <option value="cafe">☕ 咖啡甜點</option>
+            <option value="fast_food">🍔 速食炸物</option>
+            <option value="bakery">🥐 烘焙點心</option>
+            <option value="drink">🧋 手搖飲品</option>
+          </select>
+
+          <!-- 排序 -->
+          <select id="sortBy" class="custom-select" aria-label="排序方式">
+            <option value="distance">📍 依距離最近</option>
+            <option value="rating">★ 依評分最高</option>
+            <option value="name">🔤 依店名排序</option>
+          </select>
+        </div>
+
+        <!-- 營業狀態開關 -->
+        <div class="filter-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="openOnlyToggle" checked>
+            <div class="toggle-slider"></div>
+            <span class="toggle-label">只顯示營業中店家</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- 統計數據 -->
+      <div class="list-header">
+        <div class="list-count">
+          <span>搜尋結果：</span>
+          <span class="list-count-badge" id="placesCount">載入中...</span>
+        </div>
+      </div>
+
+      <!-- 店家清單列表 -->
+      <section class="places-list" id="placesList" aria-label="美食店家列表">
+        <!-- 由 JavaScript 動態渲染 -->
+      </section>
+    </aside>
+
+    <!-- 地圖視圖區域 -->
+    <section class="map-view-container" aria-label="周遭美食地圖">
+      <div id="map"></div>
+
+      <!-- 地圖懸浮工具列 -->
+      <div class="map-overlay-tools">
+        <button id="btnRandomPick" class="tool-fab-btn btn-spin-wheel" title="不知道吃什麼？讓命運幫你抽一家！">
+          <span>🎲 今天吃什麼？</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 隨機挑選 Modal -->
+  <div id="randomModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="randomModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="randomModalTitle">🎲 隨機美食推薦</h3>
+        <button id="randomModalClose" class="modal-close-btn" aria-label="關閉">&times;</button>
+      </div>
+      <div class="modal-body" id="randomPickResult">
+        <!-- 動態渲染隨機抽籤結果 -->
+      </div>
+      <div class="modal-footer">
+        <button id="btnSpinAgain" class="btn-header-action btn-primary">再抽一次 🔄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定 Modal (Google Places API Key) -->
+  <div id="settingsModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="settingsModalTitle">⚙️ 資料來源與 API 設定</h3>
+        <button id="settingsModalClose" class="modal-close-btn" aria-label="關閉">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.5;">
+          EatFinder 預設採用 <strong>OpenStreetMap (Overpass API)</strong>，完全免費且無需 API 金鑰。<br><br>
+          若您擁有 <strong>Google Cloud API Key</strong>（已啟用 Places API New），可填入下方以獲得更精準的官方星級評分、評論數與營業中資訊。
+        </p>
+        
+        <label for="googleApiKeyInput" style="display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.4rem;">
+          Google Places API Key (可選)：
+        </label>
+        <input type="text" id="googleApiKeyInput" class="search-input" placeholder="AIzaSy..." style="padding-left: 0.9rem;">
+        <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.4rem;">
+          金鑰僅保存在您的本機瀏覽器 LocalStorage，不會上傳至任何伺服器。
+        </small>
+      </div>
+      <div class="modal-footer">
+        <button id="btnSaveSettings" class="btn-header-action btn-primary">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 浮動 Toast 訊息容器 -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Main Application Script (ES Module) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
