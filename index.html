@@ -71,8 +71,8 @@
           <select id="searchRadius" class="custom-select" aria-label="搜尋半徑">
             <option value="1">半徑 1 公里</option>
             <option value="3">半徑 3 公里</option>
-            <option value="5">半徑 5 公里</option>
-            <option value="10" selected>半徑 10 公里 (預設)</option>
+            <option value="5" selected>半徑 5 公里 (預設)</option>
+            <option value="10">半徑 10 公里</option>
           </select>
 
           <!-- 類別過濾 -->
@@ -87,7 +87,9 @@
 
           <!-- 排序 -->
           <select id="sortBy" class="custom-select" aria-label="排序方式">
-            <option value="distance">📍 依距離最近</option>
+            <option value="distance" selected>📍 依距離最近 (近至遠)</option>
+            <option value="closing_late">🌙 依打烊時間 (最晚打烊優先)</option>
+            <option value="closing_soon">⏳ 依打烊時間 (即將打烊優先)</option>
             <option value="rating">★ 依評分最高</option>
             <option value="name">🔤 依店名排序</option>
           </select>

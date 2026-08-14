@@ -140,6 +140,7 @@ export const OsmService = {
         isOpen: parsedHours.isOpen,
         statusText: parsedHours.statusText,
         todayHoursText: parsedHours.todayHoursText,
+        closeMinutes: parsedHours.closeMinutes,
         // 連結
         googleMapsUrl: googleMapsUrl,
         directionsUrl: directionsUrl,

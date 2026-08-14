@@ -114,20 +114,20 @@ export const UI = {
       const isClosed = place.isOpen === false;
 
       let statusBadgeClass = 'status-unknown';
-      let statusBadgeLabel = '營業時間未定';
+      let statusBadgeLabel = '時段未定';
       if (isCurrentlyOpen) {
         statusBadgeClass = 'status-open';
         statusBadgeLabel = '● 營業中';
       } else if (isClosed) {
         statusBadgeClass = 'status-closed';
-        statusBadgeLabel = '● 本日休息 / 已打烊';
+        statusBadgeLabel = '● 本日已打烊';
       }
 
       return `
         <article class="place-card ${isCurrentlyOpen ? 'is-open' : ''}" data-id="${place.id}" data-lat="${place.lat}" data-lng="${place.lng}">
           <div class="card-header">
             <div class="card-title-group">
-              <span class="category-tag">${place.categoryIcon || '🍽️'} ${place.category || '餐飲'}</span>
+              <span class="category-tag">${place.categoryIcon || '🍽️'} ${place.category || '餐飲美食'}</span>
               <h3 class="place-name" title="${this.escapeHtml(place.name)}">${this.escapeHtml(place.name)}</h3>
             </div>
             <button class="btn-fav ${isFav ? 'active' : ''}" data-id="${place.id}" title="${isFav ? '取消收藏' : '加入收藏'}" aria-label="收藏店家">
@@ -135,22 +135,22 @@ export const UI = {
             </button>
           </div>
 
-          <div class="card-body">
-            <!-- 營業狀態與今日時間 -->
-            <div class="info-badge-row">
-              <span class="status-badge ${statusBadgeClass}">${statusBadgeLabel}</span>
-              ${place.rating ? `<span class="rating-badge">★ ${place.rating.toFixed(1)} ${place.userRatingCount ? `(${place.userRatingCount})` : ''}</span>` : ''}
-              ${place.priceLevel ? `<span class="price-badge">${place.priceLevel}</span>` : ''}
-              <span class="distance-badge">📍 距離 ${place.distanceText}</span>
-            </div>
+          <!-- 營業狀態、距離與評價 -->
+          <div class="info-badge-row">
+            <span class="status-badge ${statusBadgeClass}">${statusBadgeLabel}</span>
+            <span class="distance-badge">📍 距離 ${place.distanceText}</span>
+            ${place.rating ? `<span class="rating-badge">★ ${place.rating.toFixed(1)} ${place.userRatingCount ? `(${place.userRatingCount})` : ''}</span>` : ''}
+            ${place.priceLevel ? `<span class="price-badge">${place.priceLevel}</span>` : ''}
+          </div>
 
+          <div class="card-body">
             <!-- 今日營業時間 -->
-            <div class="card-detail-item hours-item ${isCurrentlyOpen ? 'highlight-hours' : ''}">
+            <div class="card-detail-item hours-item">
               <span class="detail-icon">🕒</span>
               <div class="detail-content">
-                <span class="detail-label">今日營業時間：</span>
-                <span class="detail-value hours-value">${this.escapeHtml(place.todayHoursText || '未提供時段')}</span>
-                ${place.statusText ? `<span class="status-hint">(${this.escapeHtml(place.statusText)})</span>` : ''}
+                <span class="detail-label">今日營業時間</span>
+                <span class="detail-value hours-value">${this.escapeHtml(place.todayHoursText || '依現場公告為準')}</span>
+                ${place.statusText ? `<span class="status-hint">${this.escapeHtml(place.statusText)}</span>` : ''}
               </div>
             </div>
 
@@ -158,7 +158,7 @@ export const UI = {
             <div class="card-detail-item">
               <span class="detail-icon">🏠</span>
               <div class="detail-content">
-                <span class="detail-label">地址：</span>
+                <span class="detail-label">地址</span>
                 <span class="detail-value address-value">${this.escapeHtml(place.address)}</span>
               </div>
             </div>
@@ -167,7 +167,7 @@ export const UI = {
             <div class="card-detail-item">
               <span class="detail-icon">🍲</span>
               <div class="detail-content">
-                <span class="detail-label">料理風格：</span>
+                <span class="detail-label">料理種類</span>
                 <span class="detail-value">${this.escapeHtml(place.cuisine)}</span>
               </div>
             </div>` : ''}
@@ -183,14 +183,13 @@ export const UI = {
             </a>
 
             <a href="${place.directionsUrl}" target="_blank" rel="noopener noreferrer" class="btn-action btn-navigate" title="規劃導航路徑">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>
               <span>導航前往</span>
             </a>
 
             ${place.phone ? `
               <a href="tel:${place.phone}" class="btn-action btn-call" title="撥打電話 ${this.escapeHtml(place.phone)}">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                <span>通話</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
               </a>
             ` : ''}
           </div>

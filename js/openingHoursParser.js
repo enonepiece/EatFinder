@@ -127,6 +127,7 @@ export const OpeningHoursParser = {
       isOpen: isOpenNow,
       statusText: statusText,
       todayHoursText: todayHoursFormatted,
+      closeMinutes: nextCloseTime !== null ? nextCloseTime : (isOpenNow ? 1440 : -1),
       raw: str
     };
   },

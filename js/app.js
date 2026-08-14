@@ -12,7 +12,7 @@ class EatFinderApp {
   constructor() {
     this.currentLat = 25.0330; // 預設台北 101 座標
     this.currentLng = 121.5654;
-    this.currentRadiusKm = 10; // 預設 10 公里
+    this.currentRadiusKm = 5; // 預設 5 公里
     this.allPlaces = [];
     this.filteredPlaces = [];
     this.favoritePlaces = new Map();
@@ -222,7 +222,17 @@ class EatFinderApp {
 
     // 3. 排序
     if (sortBy === 'distance') {
-      list.sort((a, b) => a.distanceKm - b.distanceKm);
+      list.sort((a, b) => a.distanceKm - b.distanceKm); // 近至遠
+    } else if (sortBy === 'closing_late') {
+      // 最晚打烊優先 (closeMinutes 較大者排前面，24小時或跨夜優先)
+      list.sort((a, b) => (b.closeMinutes || 0) - (a.closeMinutes || 0));
+    } else if (sortBy === 'closing_soon') {
+      // 即將打烊優先 (有營業且 closeMinutes 較小者排前面)
+      list.sort((a, b) => {
+        const aMin = (a.closeMinutes > 0) ? a.closeMinutes : 9999;
+        const bMin = (b.closeMinutes > 0) ? b.closeMinutes : 9999;
+        return aMin - bMin;
+      });
     } else if (sortBy === 'rating') {
       list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === 'name') {
