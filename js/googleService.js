@@ -22,44 +22,109 @@ export const GoogleService = {
   },
 
   /**
-   * 使用 Google Places API (New) searchNearby 搜尋半徑內的餐廳
+   * 使用 Google Places API (New) searchNearby 搜尋半徑內的餐飲店家
+   * 針對「全部」類別：發起兩個並行請求（各 20 筆，不同類型群組）合併去重，最多 40 筆
    */
   async fetchNearbyPlaces(lat, lng, radiusKm = 5, category = 'all') {
-    // 快取機制 (座標精準到小數點後 2 位約 1km，半徑與類別相同時直接命中快取)
     const cacheKey = `${lat.toFixed(2)}_${lng.toFixed(2)}_${radiusKm}_${category}`;
     const cached = this.cache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp < 5 * 60 * 1000)) {
-      console.log('⚡ 使用 Google Places 快取資料 (節省 API 配額)');
+      console.log('⚡ 使用 Google Places 快取資料');
       return cached.data;
     }
 
-    const radiusMeters = Math.min(radiusKm * 1000, 10000);
+    const radiusMeters = Math.min(radiusKm * 1000, 50000);
 
-    let includedTypes = ['restaurant', 'cafe', 'fast_food_restaurant', 'bakery', 'meal_takeaway'];
-    if (category === 'restaurant') includedTypes = ['restaurant'];
-    if (category === 'cafe') includedTypes = ['cafe', 'coffee_shop'];
-    if (category === 'fast_food') includedTypes = ['fast_food_restaurant', 'meal_takeaway'];
-    if (category === 'bakery') includedTypes = ['bakery'];
-    if (category === 'drink') includedTypes = ['cafe', 'coffee_shop'];
+    // ==============================================================
+    // 類型群組定義
+    // 群組 A：主流餐廳、速食、咖啡
+    // 群組 B：特色料理、飲品、小吃、夜市、甜點
+    // 兩個群組並行發送，各 20 筆上限，合併後去重
+    // ==============================================================
+    const TYPE_GROUPS = {
+      all: [
+        // 群組 A
+        ['restaurant', 'fast_food_restaurant', 'cafe', 'meal_takeaway', 'meal_delivery',
+         'bakery', 'bar', 'food_court'],
+        // 群組 B
+        ['chinese_restaurant', 'japanese_restaurant', 'korean_restaurant',
+         'american_restaurant', 'pizza_restaurant', 'ramen_restaurant',
+         'ice_cream_shop', 'brunch_restaurant', 'sandwich_shop', 'seafood_restaurant',
+         'steak_house', 'vegetarian_restaurant', 'thai_restaurant', 'vietnamese_restaurant']
+      ],
+      restaurant: [
+        ['restaurant', 'chinese_restaurant', 'japanese_restaurant', 'korean_restaurant',
+         'american_restaurant', 'pizza_restaurant', 'ramen_restaurant',
+         'seafood_restaurant', 'steak_house', 'vegetarian_restaurant',
+         'thai_restaurant', 'vietnamese_restaurant', 'brunch_restaurant',
+         'sandwich_shop', 'food_court']
+      ],
+      cafe: [
+        ['cafe', 'coffee_shop', 'brunch_restaurant', 'bakery']
+      ],
+      fast_food: [
+        ['fast_food_restaurant', 'meal_takeaway', 'meal_delivery', 'sandwich_shop']
+      ],
+      bakery: [
+        ['bakery', 'cafe', 'ice_cream_shop']
+      ],
+      drink: [
+        ['cafe', 'coffee_shop', 'bar', 'ice_cream_shop']
+      ]
+    };
 
+    const typeGroups = TYPE_GROUPS[category] || TYPE_GROUPS.all;
+
+    // 發起並行請求
+    const requests = typeGroups.map(types => this._fetchWithTypes(lat, lng, radiusMeters, types));
+    const results = await Promise.allSettled(requests);
+
+    // 合併結果並去重（以 place id 為 key）
+    const mergedMap = new Map();
+    let hasSuccess = false;
+
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        hasSuccess = true;
+        const places = result.value?.places || [];
+        for (const p of places) {
+          if (!mergedMap.has(p.id)) mergedMap.set(p.id, p);
+        }
+      } else {
+        console.warn('部分請求失敗:', result.reason);
+      }
+    }
+
+    if (!hasSuccess) {
+      // 全部失敗，拋出最後一個錯誤
+      const lastErr = results.find(r => r.status === 'rejected');
+      throw new Error(lastErr?.reason?.message || 'Google Places API 請求失敗');
+    }
+
+    const normalized = this.normalizePlaces(Array.from(mergedMap.values()), lat, lng);
+    console.log(`📍 合併後共 ${normalized.length} 間店家（${typeGroups.length} 個請求群組）`);
+
+    this.cache.set(cacheKey, { data: normalized, timestamp: Date.now() });
+    return normalized;
+  },
+
+  /**
+   * 單次請求（優先 Cloudflare Proxy → 直連 Fallback）
+   */
+  async _fetchWithTypes(lat, lng, radiusMeters, includedTypes) {
     const requestBody = {
-      includedTypes: includedTypes,
+      includedTypes,
       maxResultCount: 20,
       languageCode: 'zh-TW',
       locationRestriction: {
         circle: {
-          center: {
-            latitude: lat,
-            longitude: lng
-          },
+          center: { latitude: lat, longitude: lng },
           radius: radiusMeters
         }
       }
     };
 
-    let data = null;
-
-    // 1. 優先透過 Cloudflare Serverless Proxy (/api/places) 轉發，100% 避開瀏覽器 CORS
+    // 1. Cloudflare Proxy
     try {
       const proxyRes = await fetch('/api/places', {
         method: 'POST',
@@ -67,21 +132,18 @@ export const GoogleService = {
         body: JSON.stringify(requestBody)
       });
       if (proxyRes.ok) {
-        data = await proxyRes.json();
-      } else {
-        const errData = await proxyRes.json().catch(() => ({}));
-        throw new Error(errData?.error?.message || `Proxy 錯誤 (${proxyRes.status})`);
+        return await proxyRes.json();
       }
+      const errData = await proxyRes.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || `Proxy 錯誤 (${proxyRes.status})`);
     } catch (proxyErr) {
-      console.warn('Cloudflare Proxy 失敗，嘗試直連:', proxyErr);
-      const apiKey = await Config.resolveApiKey();
-      if (!apiKey) {
-        throw new Error(proxyErr.message || '未設定 Google Places API Key');
-      }
+      console.warn('Proxy 失敗，嘗試直連:', proxyErr.message);
 
-      // 2. 本機直連 Fallback
-      const url = 'https://places.googleapis.com/v1/places:searchNearby';
-      const response = await fetch(url, {
+      // 2. 直連 Fallback（本機開發用）
+      const apiKey = await Config.resolveApiKey();
+      if (!apiKey) throw new Error(proxyErr.message || '未設定 API Key');
+
+      const response = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,18 +158,8 @@ export const GoogleService = {
         const errJson = await response.json().catch(() => ({}));
         throw new Error(errJson?.error?.message || `Google Places API 錯誤 (${response.status})`);
       }
-      data = await response.json();
+      return await response.json();
     }
-
-    const normalized = this.normalizePlaces(data.places || [], lat, lng);
-
-    // 存入快取
-    this.cache.set(cacheKey, {
-      data: normalized,
-      timestamp: Date.now()
-    });
-
-    return normalized;
   },
 
   normalizePlaces(places, userLat, userLng) {
