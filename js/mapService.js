@@ -1,6 +1,5 @@
 /**
  * mapService.js - Google Maps 官方地圖服務模組
- * 使用 AdvancedMarkerElement（新版 API，取代已棄用的 Marker）
  */
 
 // 高質感深色地圖樣式
@@ -36,8 +35,7 @@ export const MapService = {
   map: null,
   userMarker: null,
   radiusCircle: null,
-  placeMarkers: [],      // 舊版 Marker (user location 用)
-  advancedMarkers: [],   // AdvancedMarkerElement (店家 markers)
+  placeMarkers: [],
   currentInfoWindow: null,
   onLocationSelectCallback: null,
 
@@ -54,7 +52,7 @@ export const MapService = {
     this.map = new google.maps.Map(container, {
       center,
       zoom: 14,
-      styles: DARK_MAP_STYLE,   // mapId 與 styles 不能並存，移除 mapId 保留深色主題
+      styles: DARK_MAP_STYLE,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
@@ -80,49 +78,30 @@ export const MapService = {
 
   /**
    * 更新使用者 GPS 定位點與搜尋半徑圓圈
-   * 使用者位置改用 AdvancedMarkerElement（避免棄用警告）
    */
-  async updateUserLocation(lat, lng, radiusKm = 3) {
+  updateUserLocation(lat, lng, radiusKm = 3) {
     if (!this.map) return;
 
     const center = { lat, lng };
 
-    // 使用者位置 (自訂 HTML 藍點)
-    const { AdvancedMarkerElement } = await google.maps.importLibrary('marker').catch(() => ({}));
-
+    // 使用者位置 (SVG 藍點)
     if (this.userMarker) {
-      this.userMarker.position = center;
+      this.userMarker.setPosition(center);
     } else {
-      const pin = document.createElement('div');
-      pin.style.cssText = [
-        'width:18px', 'height:18px', 'background:#3b82f6',
-        'border:3px solid white', 'border-radius:50%',
-        'box-shadow:0 0 0 4px rgba(59,130,246,0.3)',
-        'position:relative'
-      ].join(';');
-
-      if (AdvancedMarkerElement) {
-        this.userMarker = new AdvancedMarkerElement({
-          position: center,
-          map: this.map,
-          title: '📍 您的目前位置',
-          content: pin,
-          zIndex: 9999
-        });
-      } else {
-        // Fallback
-        this.userMarker = new google.maps.Marker({
-          position: center,
-          map: this.map,
-          title: '📍 您的目前位置',
-          zIndex: 9999,
-          icon: {
-            path: google.maps.SymbolPath?.CIRCLE ?? 0,
-            scale: 9, fillColor: '#3b82f6', fillOpacity: 1,
-            strokeColor: '#ffffff', strokeWeight: 3
-          }
-        });
-      }
+      this.userMarker = new google.maps.Marker({
+        position: center,
+        map: this.map,
+        title: '📍 您的目前位置',
+        zIndex: 9999,
+        icon: {
+          path: google.maps.SymbolPath?.CIRCLE ?? 0,
+          scale: 9,
+          fillColor: '#3b82f6',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 3,
+        }
+      });
     }
 
     // 搜尋半徑圓圈
@@ -147,76 +126,12 @@ export const MapService = {
   },
 
   /**
-   * 標記店家清單（使用 AdvancedMarkerElement）
+   * 標記店家清單
    */
-  async renderPlaces(places, onMarkerClick = null) {
+  renderPlaces(places, onMarkerClick = null) {
     if (!this.map) return;
 
     // 清除舊 Markers
-    this.advancedMarkers.forEach(m => {
-      if (m.map) m.map = null;
-    });
-    this.advancedMarkers = [];
-
-    // 確認 AdvancedMarkerElement 可用
-    const { AdvancedMarkerElement } = await google.maps.importLibrary('marker').catch(() => ({}));
-
-    if (!AdvancedMarkerElement) {
-      // Fallback：用舊版 Marker
-      this._renderPlacesLegacy(places, onMarkerClick);
-      return;
-    }
-
-    places.forEach((place) => {
-      if (!place.lat || !place.lng) return;
-
-      const isOpen = place.isOpen === true;
-      const isClosed = place.isOpen === false;
-      const color = isOpen ? '#10b981' : isClosed ? '#ef4444' : '#f59e0b';
-      const label = isOpen ? '營業中' : isClosed ? '已打烊' : '?';
-
-      // 建立自訂 HTML Pin
-      const pin = document.createElement('div');
-      pin.style.cssText = `
-        width: 36px; height: 36px;
-        background: ${color};
-        border: 2.5px solid white;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer;
-        transition: transform 0.15s ease;
-      `;
-      pin.innerHTML = `<span style="transform:rotate(45deg);font-size:1rem;">${place.categoryIcon || '🍽️'}</span>`;
-
-      pin.addEventListener('mouseenter', () => { pin.style.transform = 'rotate(-45deg) scale(1.2)'; });
-      pin.addEventListener('mouseleave', () => { pin.style.transform = 'rotate(-45deg) scale(1)'; });
-
-      const marker = new AdvancedMarkerElement({
-        position: { lat: place.lat, lng: place.lng },
-        map: this.map,
-        title: place.name,
-        content: pin
-      });
-
-      // 使用 gmp-click（AdvancedMarkerElement 的正確事件名稱）
-      marker.addListener('gmp-click', () => {
-        if (this.currentInfoWindow) {
-          this.currentInfoWindow.setContent(this._buildInfoWindowContent(place, color));
-          this.currentInfoWindow.open(this.map, marker);
-        }
-        if (onMarkerClick) onMarkerClick(place, marker);
-      });
-
-      this.advancedMarkers.push(marker);
-    });
-  },
-
-  /**
-   * 舊版 Marker Fallback（以防 AdvancedMarkerElement 不可用）
-   */
-  _renderPlacesLegacy(places, onMarkerClick) {
     this.placeMarkers.forEach(m => m.setMap(null));
     this.placeMarkers = [];
 
