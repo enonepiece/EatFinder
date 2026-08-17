@@ -48,7 +48,9 @@ export async function onRequestPost(context) {
   }
 
   try {
-    const googleUrl = "https://places.googleapis.com/v1/places:searchNearby";
+    const endpoint = requestBody.endpoint === "searchText" ? "searchText" : "searchNearby";
+    delete requestBody.endpoint;
+    const googleUrl = `https://places.googleapis.com/v1/places:${endpoint}`;
 
     const googleRes = await fetch(googleUrl, {
       method: "POST",
