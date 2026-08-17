@@ -23,7 +23,11 @@ export const GoogleService = {
 
   /**
    * 使用 Google Places API (New) searchNearby 搜尋半徑內的餐飲店家
-   * 針對「全部」類別：發起兩個並行請求（各 20 筆，不同類型群組）合併去重，最多 40 筆
+   *
+   * Google Places API (New) 的 includedTypes 只支援 Table A 具體類型，
+   * 不支援 "food" 這類父類別。
+   * 策略：「全部」時列出所有官方支援的餐飲類型（最多 50 個），一次請求；
+   * 特定類別則精確篩選。
    */
   async fetchNearbyPlaces(lat, lng, radiusKm = 5, category = 'all') {
     const cacheKey = `${lat.toFixed(2)}_${lng.toFixed(2)}_${radiusKm}_${category}`;
@@ -36,80 +40,66 @@ export const GoogleService = {
     const radiusMeters = Math.min(radiusKm * 1000, 50000);
 
     // ==============================================================
-    // 類型群組定義
-    // 群組 A：主流餐廳、速食、咖啡
-    // 群組 B：特色料理、飲品、小吃、夜市、甜點
-    // 兩個群組並行發送，各 20 筆上限，合併後去重
+    // Google Places API New 支援的所有餐飲相關 Table A 類型
+    // 「全部」類別一次送出，讓 Google 依距離/相關性排序後回傳最佳 20 筆
     // ==============================================================
-    const TYPE_GROUPS = {
-      all: [
-        // 群組 A
-        ['restaurant', 'fast_food_restaurant', 'cafe', 'meal_takeaway', 'meal_delivery',
-         'bakery', 'bar', 'food_court'],
-        // 群組 B
-        ['chinese_restaurant', 'japanese_restaurant', 'korean_restaurant',
-         'american_restaurant', 'pizza_restaurant', 'ramen_restaurant',
-         'ice_cream_shop', 'brunch_restaurant', 'sandwich_shop', 'seafood_restaurant',
-         'steak_house', 'vegetarian_restaurant', 'thai_restaurant', 'vietnamese_restaurant']
-      ],
-      restaurant: [
-        ['restaurant', 'chinese_restaurant', 'japanese_restaurant', 'korean_restaurant',
-         'american_restaurant', 'pizza_restaurant', 'ramen_restaurant',
-         'seafood_restaurant', 'steak_house', 'vegetarian_restaurant',
-         'thai_restaurant', 'vietnamese_restaurant', 'brunch_restaurant',
-         'sandwich_shop', 'food_court']
-      ],
-      cafe: [
-        ['cafe', 'coffee_shop', 'brunch_restaurant', 'bakery']
-      ],
-      fast_food: [
-        ['fast_food_restaurant', 'meal_takeaway', 'meal_delivery', 'sandwich_shop']
-      ],
-      bakery: [
-        ['bakery', 'cafe', 'ice_cream_shop']
-      ],
-      drink: [
-        ['cafe', 'coffee_shop', 'bar', 'ice_cream_shop']
-      ]
+    const ALL_FOOD_TYPES = [
+      // 通用
+      'restaurant', 'fast_food_restaurant', 'cafe', 'coffee_shop',
+      'meal_takeaway', 'meal_delivery', 'food_court', 'bar', 'bakery',
+      // 各國料理
+      'chinese_restaurant', 'japanese_restaurant', 'korean_restaurant',
+      'american_restaurant', 'pizza_restaurant', 'ramen_restaurant',
+      'sushi_restaurant', 'seafood_restaurant', 'steak_house',
+      'thai_restaurant', 'vietnamese_restaurant', 'mediterranean_restaurant',
+      'mexican_restaurant', 'middle_eastern_restaurant', 'indian_restaurant',
+      'french_restaurant', 'italian_restaurant', 'greek_restaurant',
+      'spanish_restaurant', 'hamburger_restaurant',
+      // 特色類型
+      'brunch_restaurant', 'sandwich_shop', 'vegetarian_restaurant',
+      'bbq_restaurant', 'noodle_restaurant', 'hot_pot_restaurant',
+      'dim_sum_restaurant', 'ice_cream_shop', 'bubble_tea_store', 'juice_shop'
+    ];
+
+    const CATEGORY_TYPES = {
+      all:        ALL_FOOD_TYPES,
+      restaurant: ['restaurant', 'chinese_restaurant', 'japanese_restaurant', 'korean_restaurant',
+                   'american_restaurant', 'pizza_restaurant', 'ramen_restaurant', 'sushi_restaurant',
+                   'seafood_restaurant', 'steak_house', 'thai_restaurant', 'vietnamese_restaurant',
+                   'mediterranean_restaurant', 'mexican_restaurant', 'indian_restaurant',
+                   'french_restaurant', 'italian_restaurant', 'brunch_restaurant',
+                   'bbq_restaurant', 'noodle_restaurant', 'hot_pot_restaurant', 'dim_sum_restaurant',
+                   'vegetarian_restaurant', 'food_court', 'hamburger_restaurant'],
+      cafe:       ['cafe', 'coffee_shop', 'brunch_restaurant', 'bakery', 'bubble_tea_store'],
+      fast_food:  ['fast_food_restaurant', 'meal_takeaway', 'meal_delivery', 'sandwich_shop', 'hamburger_restaurant'],
+      bakery:     ['bakery', 'cafe', 'ice_cream_shop'],
+      drink:      ['cafe', 'coffee_shop', 'bar', 'bubble_tea_store', 'juice_shop', 'ice_cream_shop']
     };
 
-    const typeGroups = TYPE_GROUPS[category] || TYPE_GROUPS.all;
+    const includedTypes = CATEGORY_TYPES[category] || ALL_FOOD_TYPES;
 
-    // 發起並行請求
-    const requests = typeGroups.map(types => this._fetchWithTypes(lat, lng, radiusMeters, types));
-    const results = await Promise.allSettled(requests);
-
-    // 合併結果並去重（以 place id 為 key）
-    const mergedMap = new Map();
-    let hasSuccess = false;
-
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        hasSuccess = true;
-        const places = result.value?.places || [];
-        for (const p of places) {
-          if (!mergedMap.has(p.id)) mergedMap.set(p.id, p);
+    const requestBody = {
+      includedTypes,
+      maxResultCount: 20,
+      languageCode: 'zh-TW',
+      rankPreference: 'DISTANCE',
+      locationRestriction: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: radiusMeters
         }
-      } else {
-        console.warn('部分請求失敗:', result.reason);
       }
-    }
+    };
 
-    if (!hasSuccess) {
-      // 全部失敗，拋出最後一個錯誤
-      const lastErr = results.find(r => r.status === 'rejected');
-      throw new Error(lastErr?.reason?.message || 'Google Places API 請求失敗');
-    }
-
-    const normalized = this.normalizePlaces(Array.from(mergedMap.values()), lat, lng);
-    console.log(`📍 合併後共 ${normalized.length} 間店家（${typeGroups.length} 個請求群組）`);
+    const data = await this._fetchWithTypes(lat, lng, radiusMeters, includedTypes);
+    const normalized = this.normalizePlaces(data.places || [], lat, lng);
+    console.log(`📍 取得 ${normalized.length} 間店家（類別：${category}，類型數：${includedTypes.length}）`);
 
     this.cache.set(cacheKey, { data: normalized, timestamp: Date.now() });
     return normalized;
   },
-
   /**
-   * 單次請求（優先 Cloudflare Proxy → 直連 Fallback）
+   * 單次請求實作（優先 Cloudflare Proxy → 直連 Fallback）
    */
   async _fetchWithTypes(lat, lng, radiusMeters, includedTypes) {
     const requestBody = {
@@ -123,6 +113,7 @@ export const GoogleService = {
         }
       }
     };
+
 
     // 1. Cloudflare Proxy
     try {
