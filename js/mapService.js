@@ -1,129 +1,43 @@
 /**
  * mapService.js - Google Maps 官方地圖服務模組
+ * 使用 AdvancedMarkerElement（新版 API，取代已棄用的 Marker）
  */
 
-// 高質感深色地圖樣式 (Dark Theme Style)
+// 高質感深色地圖樣式
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#1d2c4d" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#8ec3b9" }] },
   { elementType: "labels.text.stroke", stylers: [{ color: "#1a3646" }] },
-  {
-    featureType: "administrative.country",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#4b6878" }],
-  },
-  {
-    featureType: "administrative.province",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#4b6878" }],
-  },
-  {
-    featureType: "landscape.man_made",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#334e68" }],
-  },
-  {
-    featureType: "landscape.natural",
-    elementType: "geometry",
-    stylers: [{ color: "#021019" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "geometry",
-    stylers: [{ color: "#283d6a" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#6f9ba5" }],
-  },
-  {
-    featureType: "poi",
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#1d2c4d" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "geometry.fill",
-    stylers: [{ color: "#023e58" }],
-  },
-  {
-    featureType: "poi.park",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#3C7680" }],
-  },
-  {
-    featureType: "road",
-    elementType: "geometry",
-    stylers: [{ color: "#304a7d" }],
-  },
-  {
-    featureType: "road",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#98a5be" }],
-  },
-  {
-    featureType: "road",
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#1d2c4d" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#2c6675" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry.stroke",
-    stylers: [{ color: "#255663" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#b0d5ce" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#023e58" }],
-  },
-  {
-    featureType: "transit",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#98a5be" }],
-  },
-  {
-    featureType: "transit",
-    elementType: "labels.text.stroke",
-    stylers: [{ color: "#1d2c4d" }],
-  },
-  {
-    featureType: "transit.line",
-    elementType: "geometry.fill",
-    stylers: [{ color: "#283d6a" }],
-  },
-  {
-    featureType: "transit.station",
-    elementType: "geometry",
-    stylers: [{ color: "#3a4762" }],
-  },
-  {
-    featureType: "water",
-    elementType: "geometry",
-    stylers: [{ color: "#0e1626" }],
-  },
-  {
-    featureType: "water",
-    elementType: "labels.text.fill",
-    stylers: [{ color: "#4e6d70" }],
-  },
+  { featureType: "administrative.country", elementType: "geometry.stroke", stylers: [{ color: "#4b6878" }] },
+  { featureType: "administrative.province", elementType: "geometry.stroke", stylers: [{ color: "#4b6878" }] },
+  { featureType: "landscape.man_made", elementType: "geometry.stroke", stylers: [{ color: "#334e68" }] },
+  { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#021019" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#283d6a" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#6f9ba5" }] },
+  { featureType: "poi", elementType: "labels.text.stroke", stylers: [{ color: "#1d2c4d" }] },
+  { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#023e58" }] },
+  { featureType: "poi.park", elementType: "labels.text.fill", stylers: [{ color: "#3C7680" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#304a7d" }] },
+  { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#98a5be" }] },
+  { featureType: "road", elementType: "labels.text.stroke", stylers: [{ color: "#1d2c4d" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#2c6675" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#255663" }] },
+  { featureType: "road.highway", elementType: "labels.text.fill", stylers: [{ color: "#b0d5ce" }] },
+  { featureType: "road.highway", elementType: "labels.text.stroke", stylers: [{ color: "#023e58" }] },
+  { featureType: "transit", elementType: "labels.text.fill", stylers: [{ color: "#98a5be" }] },
+  { featureType: "transit", elementType: "labels.text.stroke", stylers: [{ color: "#1d2c4d" }] },
+  { featureType: "transit.line", elementType: "geometry.fill", stylers: [{ color: "#283d6a" }] },
+  { featureType: "transit.station", elementType: "geometry", stylers: [{ color: "#3a4762" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1626" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#4e6d70" }] },
 ];
 
 export const MapService = {
   map: null,
   userMarker: null,
   radiusCircle: null,
-  placeMarkers: [],
+  placeMarkers: [],      // 舊版 Marker (user location 用)
+  advancedMarkers: [],   // AdvancedMarkerElement (店家 markers)
   currentInfoWindow: null,
   onLocationSelectCallback: null,
 
@@ -135,30 +49,27 @@ export const MapService = {
     if (!container) return;
 
     this.onLocationSelectCallback = onLocationSelected;
-
     const center = { lat: defaultLat, lng: defaultLng };
 
-    const mapOptions = {
-      center: center,
+    this.map = new google.maps.Map(container, {
+      center,
       zoom: 14,
       styles: DARK_MAP_STYLE,
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
-      zoomControl: true
-    };
-
-    if (window.google?.maps?.ControlPosition?.RIGHT_BOTTOM) {
-      mapOptions.zoomControlOptions = {
-        position: window.google.maps.ControlPosition.RIGHT_BOTTOM
-      };
-    }
-
-    this.map = new google.maps.Map(container, mapOptions);
+      zoomControl: true,
+      zoomControlOptions: {
+        position: google.maps.ControlPosition?.RIGHT_BOTTOM ?? 7
+      },
+      // mapId 是 AdvancedMarkerElement 必要參數
+      // 使用 DEMO_MAP_ID 可本機測試；正式上線建議在 Google Cloud Console 建立專屬 Map ID
+      mapId: 'DEMO_MAP_ID'
+    });
 
     this.currentInfoWindow = new google.maps.InfoWindow();
 
-    // 點擊地圖更換中心位置
+    // 點擊地圖換中心
     this.map.addListener('click', (e) => {
       const lat = e.latLng.lat();
       const lng = e.latLng.lng();
@@ -171,16 +82,15 @@ export const MapService = {
   },
 
   /**
-   * 更新使用者目前 GPS 定位點與搜尋半徑圓圈
+   * 更新使用者 GPS 定位點與搜尋半徑圓圈
+   * 使用者位置仍使用 legacy Marker（簡單圓點，不需要 AdvancedMarker）
    */
-  updateUserLocation(lat, lng, radiusKm = 5) {
+  updateUserLocation(lat, lng, radiusKm = 3) {
     if (!this.map) return;
 
     const center = { lat, lng };
 
-    const circleSymbol = window.google?.maps?.SymbolPath?.CIRCLE ?? 0;
-
-    // 使用者位置 Marker
+    // 使用者位置 (SVG 藍點)
     if (this.userMarker) {
       this.userMarker.setPosition(center);
     } else {
@@ -190,8 +100,8 @@ export const MapService = {
         title: '📍 您的目前位置',
         zIndex: 9999,
         icon: {
-          path: circleSymbol,
-          scale: 8,
+          path: google.maps.SymbolPath?.CIRCLE ?? 0,
+          scale: 9,
           fillColor: '#3b82f6',
           fillOpacity: 1,
           strokeColor: '#ffffff',
@@ -200,7 +110,7 @@ export const MapService = {
       });
     }
 
-    // 半徑圓圈 (公尺)
+    // 搜尋半徑圓圈
     const radiusMeters = radiusKm * 1000;
     if (this.radiusCircle) {
       this.radiusCircle.setCenter(center);
@@ -208,35 +118,98 @@ export const MapService = {
     } else {
       this.radiusCircle = new google.maps.Circle({
         strokeColor: '#f97316',
-        strokeOpacity: 0.85,
+        strokeOpacity: 0.8,
         strokeWeight: 2,
         fillColor: '#f97316',
-        fillOpacity: 0.08,
+        fillOpacity: 0.07,
         map: this.map,
-        center: center,
+        center,
         radius: radiusMeters,
       });
     }
 
-    // 自動縮放視野符合半徑
     this.map.fitBounds(this.radiusCircle.getBounds());
   },
 
   /**
-   * 標記店家清單
+   * 標記店家清單（使用 AdvancedMarkerElement）
    */
-  renderPlaces(places, onMarkerClick = null) {
+  async renderPlaces(places, onMarkerClick = null) {
     if (!this.map) return;
 
-    // 清除舊的 Markers
+    // 清除舊 Markers
+    this.advancedMarkers.forEach(m => {
+      if (m.map) m.map = null;
+    });
+    this.advancedMarkers = [];
+
+    // 確認 AdvancedMarkerElement 可用
+    const { AdvancedMarkerElement } = await google.maps.importLibrary('marker').catch(() => ({}));
+
+    if (!AdvancedMarkerElement) {
+      // Fallback：用舊版 Marker
+      this._renderPlacesLegacy(places, onMarkerClick);
+      return;
+    }
+
+    places.forEach((place) => {
+      if (!place.lat || !place.lng) return;
+
+      const isOpen = place.isOpen === true;
+      const isClosed = place.isOpen === false;
+      const color = isOpen ? '#10b981' : isClosed ? '#ef4444' : '#f59e0b';
+      const label = isOpen ? '營業中' : isClosed ? '已打烊' : '?';
+
+      // 建立自訂 HTML Pin
+      const pin = document.createElement('div');
+      pin.style.cssText = `
+        width: 36px; height: 36px;
+        background: ${color};
+        border: 2.5px solid white;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: transform 0.15s ease;
+      `;
+      pin.innerHTML = `<span style="transform:rotate(45deg);font-size:1rem;">${place.categoryIcon || '🍽️'}</span>`;
+
+      pin.addEventListener('mouseenter', () => { pin.style.transform = 'rotate(-45deg) scale(1.2)'; });
+      pin.addEventListener('mouseleave', () => { pin.style.transform = 'rotate(-45deg) scale(1)'; });
+
+      const marker = new AdvancedMarkerElement({
+        position: { lat: place.lat, lng: place.lng },
+        map: this.map,
+        title: place.name,
+        content: pin
+      });
+
+      // InfoWindow 點擊
+      marker.addListener('click', () => {
+        if (this.currentInfoWindow) {
+          this.currentInfoWindow.setContent(this._buildInfoWindowContent(place, color));
+          this.currentInfoWindow.open(this.map, marker);
+        }
+        if (onMarkerClick) onMarkerClick(place, marker);
+      });
+
+      this.advancedMarkers.push(marker);
+    });
+  },
+
+  /**
+   * 舊版 Marker Fallback（以防 AdvancedMarkerElement 不可用）
+   */
+  _renderPlacesLegacy(places, onMarkerClick) {
     this.placeMarkers.forEach(m => m.setMap(null));
     this.placeMarkers = [];
 
     places.forEach((place) => {
       if (!place.lat || !place.lng) return;
 
-      const isCurrentlyOpen = place.isOpen === true;
-      const markerColor = isCurrentlyOpen ? '#10b981' : (place.isOpen === false ? '#ef4444' : '#f59e0b');
+      const isOpen = place.isOpen === true;
+      const color = isOpen ? '#10b981' : (place.isOpen === false ? '#ef4444' : '#f59e0b');
 
       const marker = new google.maps.Marker({
         position: { lat: place.lat, lng: place.lng },
@@ -244,7 +217,7 @@ export const MapService = {
         title: place.name,
         icon: {
           path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-          fillColor: markerColor,
+          fillColor: color,
           fillOpacity: 1,
           strokeColor: '#ffffff',
           strokeWeight: 1.5,
@@ -253,45 +226,44 @@ export const MapService = {
         }
       });
 
-      // InfoWindow 內容
-      const contentString = `
-        <div style="color: #0f172a; font-family: 'Noto Sans TC', sans-serif; padding: 4px 6px; max-width: 260px;">
-          <div style="font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 3px;">
-            ${place.category || '餐飲美食'} · <span style="color: ${markerColor};">${isCurrentlyOpen ? '● 營業中' : (place.isOpen === false ? '● 已打烊' : '● 時段待確認')}</span>
-          </div>
-          <h4 style="font-size: 15px; font-weight: 800; margin: 0 0 6px 0; color: #0f172a; line-height: 1.3;">${place.name}</h4>
-          <div style="font-size: 12px; color: #475569; margin-bottom: 4px;">
-            🕒 <strong>今日：</strong>${place.todayHoursText || '未提供'}
-          </div>
-          <div style="font-size: 12px; color: #475569; margin-bottom: 4px;">
-            📍 <strong>距離：</strong>${place.distanceText}
-          </div>
-          <div style="font-size: 11px; color: #64748b; margin-bottom: 8px; word-break: break-all;">
-            🏠 ${place.address}
-          </div>
-          <div style="display: flex; gap: 6px;">
-            <a href="${place.googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="flex: 1; text-align: center; background: #2563eb; color: white; text-decoration: none; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">
-              Google Maps
-            </a>
-            <a href="${place.directionsUrl}" target="_blank" rel="noopener noreferrer" style="flex: 1; text-align: center; background: #0f172a; color: white; text-decoration: none; padding: 5px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">
-              導航前往
-            </a>
-          </div>
-        </div>
-      `;
-
       marker.addListener('click', () => {
         if (this.currentInfoWindow) {
-          this.currentInfoWindow.setContent(contentString);
+          this.currentInfoWindow.setContent(this._buildInfoWindowContent(place, color));
           this.currentInfoWindow.open(this.map, marker);
         }
-        if (onMarkerClick) {
-          onMarkerClick(place, marker);
-        }
+        if (onMarkerClick) onMarkerClick(place, marker);
       });
 
       this.placeMarkers.push(marker);
     });
+  },
+
+  /**
+   * 建立 InfoWindow HTML 內容
+   */
+  _buildInfoWindowContent(place, markerColor) {
+    const isOpen = place.isOpen === true;
+    const statusText = isOpen ? '● 營業中' : (place.isOpen === false ? '● 已打烊' : '● 時段待確認');
+    return `
+      <div style="color:#0f172a;font-family:'Noto Sans TC',sans-serif;padding:6px 8px;max-width:240px;min-width:160px;">
+        <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:3px;">
+          ${place.category || '餐飲'} · <span style="color:${markerColor}">${statusText}</span>
+        </div>
+        <h4 style="font-size:14px;font-weight:800;margin:0 0 5px;color:#0f172a;line-height:1.3;">${place.name}</h4>
+        <div style="font-size:11px;color:#475569;margin-bottom:3px;">🕒 ${place.todayHoursText || '依現場公告'}</div>
+        <div style="font-size:11px;color:#475569;margin-bottom:6px;">📍 ${place.distanceText}</div>
+        <div style="display:flex;gap:5px;">
+          <a href="${place.googleMapsUrl}" target="_blank" rel="noopener noreferrer"
+            style="flex:1;text-align:center;background:#2563eb;color:white;text-decoration:none;padding:5px;border-radius:6px;font-size:11px;font-weight:700;">
+            地圖
+          </a>
+          <a href="${place.directionsUrl}" target="_blank" rel="noopener noreferrer"
+            style="flex:1;text-align:center;background:#0f172a;color:white;text-decoration:none;padding:5px;border-radius:6px;font-size:11px;font-weight:700;">
+            導航
+          </a>
+        </div>
+      </div>
+    `;
   },
 
   /**
@@ -300,6 +272,6 @@ export const MapService = {
   focusPlace(lat, lng) {
     if (!this.map) return;
     this.map.panTo({ lat, lng });
-    this.map.setZoom(16);
+    this.map.setZoom(17);
   }
 };
