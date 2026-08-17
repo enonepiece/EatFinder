@@ -40,25 +40,24 @@ export const GoogleService = {
     const radiusMeters = Math.min(radiusKm * 1000, 50000);
 
     // ==============================================================
-    // Google Places API New 支援的所有餐飲相關 Table A 類型
-    // 「全部」類別一次送出，讓 Google 依距離/相關性排序後回傳最佳 20 筆
+    // Google Places API New - Table A 官方支援的所有餐飲類型
+    // 參考：https://developers.google.com/maps/documentation/places/web-service/place-types
     // ==============================================================
     const ALL_FOOD_TYPES = [
-      // 通用
+      // 通用餐飲
       'restaurant', 'fast_food_restaurant', 'cafe', 'coffee_shop',
       'meal_takeaway', 'meal_delivery', 'food_court', 'bar', 'bakery',
-      // 各國料理
-      'chinese_restaurant', 'japanese_restaurant', 'korean_restaurant',
-      'american_restaurant', 'pizza_restaurant', 'ramen_restaurant',
-      'sushi_restaurant', 'seafood_restaurant', 'steak_house',
-      'thai_restaurant', 'vietnamese_restaurant', 'mediterranean_restaurant',
-      'mexican_restaurant', 'middle_eastern_restaurant', 'indian_restaurant',
-      'french_restaurant', 'italian_restaurant', 'greek_restaurant',
-      'spanish_restaurant', 'hamburger_restaurant',
-      // 特色類型
-      'brunch_restaurant', 'sandwich_shop', 'vegetarian_restaurant',
-      'bbq_restaurant', 'noodle_restaurant', 'hot_pot_restaurant',
-      'dim_sum_restaurant', 'ice_cream_shop', 'bubble_tea_store', 'juice_shop'
+      // 各國料理（官方支援）
+      'american_restaurant', 'chinese_restaurant', 'french_restaurant',
+      'greek_restaurant', 'hamburger_restaurant', 'indian_restaurant',
+      'indonesian_restaurant', 'italian_restaurant', 'japanese_restaurant',
+      'korean_restaurant', 'mediterranean_restaurant', 'mexican_restaurant',
+      'middle_eastern_restaurant', 'pizza_restaurant', 'ramen_restaurant',
+      'seafood_restaurant', 'spanish_restaurant', 'steak_house', 'sushi_restaurant',
+      'thai_restaurant', 'turkish_restaurant', 'vegetarian_restaurant',
+      'vietnamese_restaurant',
+      // 特色類型（官方支援）
+      'brunch_restaurant', 'ice_cream_shop', 'sandwich_shop'
     ];
 
     const CATEGORY_TYPES = {
@@ -66,14 +65,14 @@ export const GoogleService = {
       restaurant: ['restaurant', 'chinese_restaurant', 'japanese_restaurant', 'korean_restaurant',
                    'american_restaurant', 'pizza_restaurant', 'ramen_restaurant', 'sushi_restaurant',
                    'seafood_restaurant', 'steak_house', 'thai_restaurant', 'vietnamese_restaurant',
-                   'mediterranean_restaurant', 'mexican_restaurant', 'indian_restaurant',
-                   'french_restaurant', 'italian_restaurant', 'brunch_restaurant',
-                   'bbq_restaurant', 'noodle_restaurant', 'hot_pot_restaurant', 'dim_sum_restaurant',
-                   'vegetarian_restaurant', 'food_court', 'hamburger_restaurant'],
-      cafe:       ['cafe', 'coffee_shop', 'brunch_restaurant', 'bakery', 'bubble_tea_store'],
+                   'mediterranean_restaurant', 'mexican_restaurant', 'indian_restaurant', 'indonesian_restaurant',
+                   'french_restaurant', 'italian_restaurant', 'greek_restaurant', 'spanish_restaurant',
+                   'turkish_restaurant', 'brunch_restaurant', 'vegetarian_restaurant',
+                   'food_court', 'hamburger_restaurant'],
+      cafe:       ['cafe', 'coffee_shop', 'brunch_restaurant', 'bakery'],
       fast_food:  ['fast_food_restaurant', 'meal_takeaway', 'meal_delivery', 'sandwich_shop', 'hamburger_restaurant'],
       bakery:     ['bakery', 'cafe', 'ice_cream_shop'],
-      drink:      ['cafe', 'coffee_shop', 'bar', 'bubble_tea_store', 'juice_shop', 'ice_cream_shop']
+      drink:      ['cafe', 'coffee_shop', 'bar', 'ice_cream_shop']
     };
 
     const includedTypes = CATEGORY_TYPES[category] || ALL_FOOD_TYPES;

@@ -54,17 +54,14 @@ export const MapService = {
     this.map = new google.maps.Map(container, {
       center,
       zoom: 14,
-      styles: DARK_MAP_STYLE,
+      styles: DARK_MAP_STYLE,   // mapId 與 styles 不能並存，移除 mapId 保留深色主題
       mapTypeControl: false,
       streetViewControl: false,
       fullscreenControl: false,
       zoomControl: true,
       zoomControlOptions: {
         position: google.maps.ControlPosition?.RIGHT_BOTTOM ?? 7
-      },
-      // mapId 是 AdvancedMarkerElement 必要參數
-      // 使用 DEMO_MAP_ID 可本機測試；正式上線建議在 Google Cloud Console 建立專屬 Map ID
-      mapId: 'DEMO_MAP_ID'
+      }
     });
 
     this.currentInfoWindow = new google.maps.InfoWindow();
@@ -83,31 +80,49 @@ export const MapService = {
 
   /**
    * 更新使用者 GPS 定位點與搜尋半徑圓圈
-   * 使用者位置仍使用 legacy Marker（簡單圓點，不需要 AdvancedMarker）
+   * 使用者位置改用 AdvancedMarkerElement（避免棄用警告）
    */
-  updateUserLocation(lat, lng, radiusKm = 3) {
+  async updateUserLocation(lat, lng, radiusKm = 3) {
     if (!this.map) return;
 
     const center = { lat, lng };
 
-    // 使用者位置 (SVG 藍點)
+    // 使用者位置 (自訂 HTML 藍點)
+    const { AdvancedMarkerElement } = await google.maps.importLibrary('marker').catch(() => ({}));
+
     if (this.userMarker) {
-      this.userMarker.setPosition(center);
+      this.userMarker.position = center;
     } else {
-      this.userMarker = new google.maps.Marker({
-        position: center,
-        map: this.map,
-        title: '📍 您的目前位置',
-        zIndex: 9999,
-        icon: {
-          path: google.maps.SymbolPath?.CIRCLE ?? 0,
-          scale: 9,
-          fillColor: '#3b82f6',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 3,
-        }
-      });
+      const pin = document.createElement('div');
+      pin.style.cssText = [
+        'width:18px', 'height:18px', 'background:#3b82f6',
+        'border:3px solid white', 'border-radius:50%',
+        'box-shadow:0 0 0 4px rgba(59,130,246,0.3)',
+        'position:relative'
+      ].join(';');
+
+      if (AdvancedMarkerElement) {
+        this.userMarker = new AdvancedMarkerElement({
+          position: center,
+          map: this.map,
+          title: '📍 您的目前位置',
+          content: pin,
+          zIndex: 9999
+        });
+      } else {
+        // Fallback
+        this.userMarker = new google.maps.Marker({
+          position: center,
+          map: this.map,
+          title: '📍 您的目前位置',
+          zIndex: 9999,
+          icon: {
+            path: google.maps.SymbolPath?.CIRCLE ?? 0,
+            scale: 9, fillColor: '#3b82f6', fillOpacity: 1,
+            strokeColor: '#ffffff', strokeWeight: 3
+          }
+        });
+      }
     }
 
     // 搜尋半徑圓圈
@@ -185,8 +200,8 @@ export const MapService = {
         content: pin
       });
 
-      // InfoWindow 點擊
-      marker.addListener('click', () => {
+      // 使用 gmp-click（AdvancedMarkerElement 的正確事件名稱）
+      marker.addListener('gmp-click', () => {
         if (this.currentInfoWindow) {
           this.currentInfoWindow.setContent(this._buildInfoWindowContent(place, color));
           this.currentInfoWindow.open(this.map, marker);
