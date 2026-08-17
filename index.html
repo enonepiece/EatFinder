@@ -40,6 +40,11 @@
         <span class="btn-text-desktop">重新定位</span>
       </button>
 
+      <button id="btnCustomLocation" class="btn-header-action" title="手動設定搜尋位置">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span class="btn-text-desktop">自訂位置</span>
+      </button>
+
       <button id="btnFavoritesToggle" class="btn-header-action btn-fav-toggle" title="查看收藏的店家">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
         <span class="btn-text-desktop">收藏</span>
@@ -100,6 +105,14 @@
             <option value="name">🔤 店名</option>
           </select>
 
+          <!-- 價位上限 -->
+          <select id="priceFilter" class="chip-select" aria-label="價位上限">
+            <option value="all">💰 全部價位</option>
+            <option value="1">💲 平價以下</option>
+            <option value="2">💲💲 中價以下</option>
+            <option value="3">💲💲💲 高價以下</option>
+          </select>
+
           <label class="chip-toggle" title="只顯示營業中店家">
             <input type="checkbox" id="openOnlyToggle" checked>
             <span class="chip-toggle-inner">
@@ -158,6 +171,37 @@
       </div>
       <div class="modal-footer">
         <button id="btnSpinAgain" class="btn-spin-again">再抽一次 🔄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自訂位置 Modal -->
+  <div id="customLocationModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="customLocationTitle">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="customLocationTitle">📌 自訂搜尋位置</h3>
+        <button id="customLocationClose" class="modal-close-btn" aria-label="關閉">&#x2715;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1rem;line-height:1.55;">
+          輸入地址、地名或座標，搜尋指定位置周遭的店家。
+        </p>
+        <!-- 地址搜尋 -->
+        <div class="location-search-group">
+          <div class="search-input-wrapper">
+            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="customLocationInput" class="search-input" placeholder="例：台北車站、東區美食、25.047, 121.517" autocomplete="off">
+          </div>
+          <button id="btnSearchLocation" class="btn-search-location">搜尋</button>
+        </div>
+        <!-- 搜尋結果 -->
+        <div id="locationSearchResult" class="location-search-result" style="display:none;"></div>
+        <!-- 目前自訂位置顯示 -->
+        <div id="currentCustomLocationInfo" class="current-custom-info" style="display:none;"></div>
+      </div>
+      <div class="modal-footer" style="justify-content: space-between;">
+        <button id="btnClearCustomLocation" class="btn-clear-location">↺ 回到 GPS 位置</button>
+        <button id="btnConfirmLocation" class="btn-spin-again" disabled>確認使用此位置</button>
       </div>
     </div>
   </div>

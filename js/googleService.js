@@ -149,6 +149,25 @@ export const GoogleService = {
         statusText = '本日已打烊';
       }
 
+      // 價位：新版 Places API 回傳字串，舊版回傳整數，統一轉為數字
+      const PRICE_MAP = {
+        'PRICE_LEVEL_FREE': 0,
+        'PRICE_LEVEL_INEXPENSIVE': 1,
+        'PRICE_LEVEL_MODERATE': 2,
+        'PRICE_LEVEL_EXPENSIVE': 3,
+        'PRICE_LEVEL_VERY_EXPENSIVE': 4
+      };
+      const rawPrice = p.priceLevel;
+      let priceLevelNum = null;
+      if (typeof rawPrice === 'number') {
+        priceLevelNum = rawPrice;
+      } else if (typeof rawPrice === 'string' && PRICE_MAP[rawPrice] !== undefined) {
+        priceLevelNum = PRICE_MAP[rawPrice];
+      }
+      const priceLevelDisplay = priceLevelNum !== null && priceLevelNum > 0
+        ? '💲'.repeat(priceLevelNum)
+        : null;
+
       const googleMapsUrl = p.googleMapsUri || GeoService.generateGoogleMapsUrl(name, address, elLat, elLng);
       const directionsUrl = (elLat && elLng) ? GeoService.generateDirectionsUrl(elLat, elLng, name) : googleMapsUrl;
 
@@ -166,7 +185,8 @@ export const GoogleService = {
         website: p.websiteUri || null,
         rating: p.rating || null,
         userRatingCount: p.userRatingCount || null,
-        priceLevel: p.priceLevel ? '💲'.repeat(p.priceLevel) : null,
+        priceLevel: priceLevelDisplay,
+        priceLevelNum: priceLevelNum,
         isOpen: isOpen,
         statusText: statusText,
         todayHoursText: todayHoursText,

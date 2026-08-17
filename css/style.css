@@ -736,6 +736,137 @@ body {
 }
 
 /* ========================
+   自訂位置 Modal
+   ======================== */
+.location-search-group {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.location-search-group .search-input-wrapper {
+  flex: 1;
+}
+
+.btn-search-location {
+  background: linear-gradient(135deg, var(--primary), #ea580c);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+  min-height: 42px;
+}
+
+.btn-search-location:hover {
+  filter: brightness(1.1);
+}
+
+.btn-search-location:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.location-search-result {
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.location-result-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.location-result-item:last-child {
+  border-bottom: none;
+}
+
+.location-result-item:hover,
+.location-result-item.selected {
+  background: var(--primary-light);
+}
+
+.location-result-item.selected {
+  border-left: 3px solid var(--primary);
+}
+
+.result-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.result-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.result-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.result-addr {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.current-custom-info {
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.84rem;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.btn-clear-location {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  min-height: 44px;
+}
+
+.btn-clear-location:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-main);
+}
+
+/* 自訂位置按鈕 active 狀態（已使用自訂位置時） */
+#btnCustomLocation.location-active {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.5);
+  color: var(--primary);
+}
+
+/* ========================
    Toast 通知
    ======================== */
 .toast-container {
